@@ -78,7 +78,7 @@ class Console:
                 self.change_directory_command(tokens[1])
                 return
 
-        self.create_error(f"There's no command named {tokens}")
+        self.create_error(f"There's no command named {string }")
 
     def create_error(self, error):
         self.messages_arr.append(Message("", error, COMMAND_ERROR_COLOR))

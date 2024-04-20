@@ -6,7 +6,7 @@ pygame.init()
 BACKGROUND = (255, 255, 255)
 
 FPS = 60
-fpsClock = pygame.time.Clock()
+fpsClock = pygame.time.Clock()  # need for main loop
 
 WINDOW_WIDTH = 600
 WINDOW_HEIGHT = 600
@@ -14,11 +14,11 @@ WINDOW_HEIGHT = 600
 BLOCK_WIDTH = 30
 YAMMIE_WIDTH = 30
 
-WINDOW = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+WINDOW = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))  # create window
 pygame.display.set_caption('Carl = Plumber!')
 
 
-class Block:
+class Block:  # class Block
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -63,7 +63,7 @@ def check_collisions(block_stack):
     for i in range(1, len(block_stack)):
         if check_two_block_collision(head, block_stack[i]):
             return True
-    if head.x < 0 or head.x > WINDOW_WIDTH or head.y < 0 or head.y > WINDOW_HEIGHT:
+    if head.x < 0 or head.x >= WINDOW_WIDTH or head.y < 0 or head.y >= WINDOW_HEIGHT:
         return True
     return False
 
@@ -73,7 +73,7 @@ def main():
     block_stack = []
     init_block = Block(300, 300)
     block_stack.append(init_block)
-    tick_time = 5
+    tick_time = 10
     tick = 0
     yammie = generate_yammie()
     key_cooldown = False

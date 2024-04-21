@@ -20,4 +20,4 @@ class ConsoleGameState(GameState):
 
     def handle_key_input(self, events):
         for event in events:
-            self.console.type(event)
+            self.console.handle_input(event)

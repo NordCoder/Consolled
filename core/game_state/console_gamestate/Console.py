@@ -1,35 +1,35 @@
 import pygame
 
-from core.game_state.snake_gamestate.Snake import Snake
-from core.game_state.snake_gamestate.SnakeGameState import SnakeGameState
+from core.game_state.console_gamestate.CommandParser import CommandParser
 
 TIL_NOT_DOWN_TICK_BIG = 25
 TIL_NOT_DOWN_TICK_SMALL = 3
-FONT_SIZE = 30
+FONT_SIZE = 35
 DASH_TICK_TARGET = 38
 DASH_TICK_MAX = 76
 TEXT_OFFSET = 10
 INITIAL_MESSAGE = "(c) Korzh Corporation. All rights reserved."
-MESSAGE_COLOR = (250, 250, 250)
-COMMAND_ERROR_COLOR = (240, 0, 0)
+COMMAND_COLOR = (250, 250, 250)
+ERROR_MESSAGE_COLOR = (240, 0, 0)
 X_TEXT_OFFSET = 20
-Y_TEXT_OFFSET = 8
+Y_TEXT_INITIAL_OFFSET = 8
+MOUSEWHEEL_SENSITIVITY = 25
 
 
-class Message:
-    def __init__(self, path, message, color):
+class Command:
+    def __init__(self, path, command, color):
         self.path = path
-        self.message = message
+        self.command = command
         self.color = color
 
     def __str__(self):
-        return f"{self.path} : {self.message}"
+        return f"{self.path} : {self.command}"
 
 
 class Console:
     def __init__(self, c_folder, game_state):
-        self.messages_arr = []
-        self.cur_message = []
+        self.command_arr = []
+        self.cur_command = []
         self.write_til_not_down = False
         self.changed_til_down_tick = False
         self.til_not_down_command = ""
@@ -40,10 +40,13 @@ class Console:
         self.current_folder = c_folder
         self.dash_x = self.font.size(self.get_path())[0]
         self.dash_y = 0
-        self.messages_arr.append(Message("", "", MESSAGE_COLOR))
-        self.messages_arr.append(Message("", INITIAL_MESSAGE, MESSAGE_COLOR))
-        self.messages_arr.append(Message("", "", MESSAGE_COLOR))
+        self.command_parser = CommandParser(self)
+        self.command_arr.append(Command("", "", COMMAND_COLOR))
+        self.command_arr.append(Command("", INITIAL_MESSAGE, COMMAND_COLOR))
+        self.command_arr.append(Command("", "", COMMAND_COLOR))
         self.game_state = game_state
+        self.initial_text_y = 8
+        self.pointer_for_arrows = -1
 
     def update(self):
         if self.write_til_not_down and self.til_not_down_cur_tick % self.til_not_down_tick == 0:
@@ -62,63 +65,49 @@ class Console:
         self.update_dash_position()
 
     def execute_return(self):
-        self.messages_arr.append(Message(self.get_path(), self.cur_message, MESSAGE_COLOR))
-        self.parse_command("".join(self.cur_message))
-        self.cur_message = []
+        self.create_message(self.get_path(), self.cur_command)
+        self.command_parser.parse_command("".join(self.cur_command)).execute(self)
+        self.cur_command = []
         self.dash_x = self.font.size(self.get_path())[0]
         self.dash_y += self.font.size("A")[1] + TEXT_OFFSET
+        if self.get_text_height() > self.game_state.game_state_manager.game.WINDOW_HEIGHT:
+            self.initial_text_y = -(self.get_text_height() - self.game_state.game_state_manager.game.WINDOW_HEIGHT +
+                                    self.font.size("A")[1] + TEXT_OFFSET)
+
+    def create_message(self, path, message):
+        self.command_arr.append(Command(path, message, COMMAND_COLOR))
 
     def execute_backspace(self):
-        self.cur_message = self.cur_message[:-1]
-        self.dash_x = self.font.size("".join(self.cur_message))[0] + self.font.size(self.get_path())[0]
-
-    def parse_command(self, string):
-        tokens = string.split()
-        if len(tokens) > 0:
-            if tokens[0] == 'ls':
-                self.list_of_dirs_command()
-                return
-            if len(tokens) > 1:
-                if tokens[0] == 'cd':
-                    self.change_directory_command(tokens[1])
-                    return
-                if tokens[0] == 'execute':
-                    self.execute_command(tokens[1])
-                    return
-
-        self.create_error(f"There's no command named {string}")
+        self.cur_command = self.cur_command[:-1]
+        self.dash_x = self.font.size("".join(self.cur_command))[0] + self.font.size(self.get_path())[0]
 
     def create_error(self, error):
-        self.messages_arr.append(Message("", error, COMMAND_ERROR_COLOR))
+        self.command_arr.append(Command("", error, ERROR_MESSAGE_COLOR))
 
-    def change_directory_command(self, dir_name):
-        for heir in self.current_folder.heirs:
-            if heir.name == dir_name:
-                self.current_folder = heir
-                return
-        self.create_error(f"There's no folder named {dir_name}")
-
-    def list_of_dirs_command(self):
-        list_of_dirs = ""
-        for heir in self.current_folder.heirs:
-            list_of_dirs += heir.name
-            list_of_dirs += " "
-        self.messages_arr.append(Message("", list_of_dirs, MESSAGE_COLOR))
-
-    def execute_command(self, filename):
-        for heir in self.current_folder.heirs:
-            if heir.name == filename and filename == "snake.exe":
-                heir.execute(SnakeGameState(self.game_state.game_state_manager))
-                return
-        self.create_error(f"{filename} is not runnable")
+    def get_text_height(self):
+        return len(self.command_arr) * self.font.size("A")[1] + TEXT_OFFSET * len(self.command_arr)
 
     def update_dash_position(self):
-        self.dash_y = len(self.messages_arr) * self.font.size("A")[1] + TEXT_OFFSET * len(self.messages_arr)
+        self.dash_y = self.get_text_height()
+
+    def handle_input(self, event):
+        if event.type == pygame.TEXTINPUT or event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
+            self.type(event)
+        elif event.type == pygame.MOUSEWHEEL:
+            self.scroll(event)
+
+    def scroll(self, event):
+        game_window_height = self.game_state.game_state_manager.game.WINDOW_HEIGHT
+        if self.get_text_height() > game_window_height and event.y < 0 and -self.initial_text_y + game_window_height - \
+                self.font.size("A")[1] + TEXT_OFFSET < self.get_text_height():
+            self.initial_text_y += event.y * MOUSEWHEEL_SENSITIVITY
+        elif self.initial_text_y < Y_TEXT_INITIAL_OFFSET and event.y > 0:
+            self.initial_text_y += event.y * MOUSEWHEEL_SENSITIVITY
 
     def type(self, event):
         if event.type == pygame.TEXTINPUT:
-            self.cur_message.append(event.text)
-            self.dash_x = self.font.size("".join(self.cur_message))[0] + self.font.size(self.get_path())[0]
+            self.cur_command.append(event.text)
+            self.dash_x = self.font.size("".join(self.cur_command))[0] + self.font.size(self.get_path())[0]
             self.dash_tick = 0
         elif event.type == pygame.KEYDOWN:
             self.write_til_not_down = True
@@ -144,15 +133,15 @@ class Console:
         return result
 
     def draw_text(self, screen):
-        initial_y = 8
-
-        for message in self.messages_arr:
-            text_surface = self.font.render(message.path + "".join(message.message), True, message.color)
+        initial_y = self.initial_text_y
+        for message in self.command_arr:
+            text_surface = self.font.render(message.path + "".join(message.command), True, message.color)
             screen.blit(text_surface, (X_TEXT_OFFSET, initial_y))
             initial_y += self.font.size("A")[1] + TEXT_OFFSET
-        text_surface = self.font.render(self.get_path() + "".join(self.cur_message), True, (255, 255, 255))
+        text_surface = self.font.render(self.get_path() + "".join(self.cur_command), True, (255, 255, 255))
         screen.blit(text_surface, (X_TEXT_OFFSET, initial_y))
         if self.dash_tick <= DASH_TICK_TARGET:
-            pygame.draw.line(screen, (255, 255, 255),
-                             (self.dash_x + X_TEXT_OFFSET, self.dash_y + Y_TEXT_OFFSET),
-                             (self.dash_x + X_TEXT_OFFSET, self.dash_y + self.font.size("A")[1] + Y_TEXT_OFFSET), 2)
+            pygame.draw.line(screen, COMMAND_COLOR,
+                             (self.dash_x + X_TEXT_OFFSET, self.dash_y + self.initial_text_y),
+                             (self.dash_x + X_TEXT_OFFSET, self.dash_y + self.font.size("A")[1] + self.initial_text_y),
+                             2)

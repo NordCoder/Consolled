@@ -4,7 +4,7 @@ from core.game_state.console_gamestate.CommandParser import CommandParser
 
 TIL_NOT_DOWN_TICK_BIG = 25
 TIL_NOT_DOWN_TICK_SMALL = 3
-FONT_SIZE = 35
+FONT_SIZE = 32
 DASH_TICK_TARGET = 38
 DASH_TICK_MAX = 76
 TEXT_OFFSET = 10
@@ -17,10 +17,11 @@ MOUSEWHEEL_SENSITIVITY = 25
 
 
 class Command:
-    def __init__(self, path, command, color):
+    def __init__(self, path, command, color, author):
         self.path = path
         self.command = command
         self.color = color
+        self.author = author
 
     def __str__(self):
         return f"{self.path} : {self.command}"
@@ -41,12 +42,12 @@ class Console:
         self.dash_x = self.font.size(self.get_path())[0]
         self.dash_y = 0
         self.command_parser = CommandParser(self)
-        self.command_arr.append(Command("", "", COMMAND_COLOR))
-        self.command_arr.append(Command("", INITIAL_MESSAGE, COMMAND_COLOR))
-        self.command_arr.append(Command("", "", COMMAND_COLOR))
+        self.command_arr.append(Command("", "", COMMAND_COLOR, "system"))
+        self.command_arr.append(Command("", INITIAL_MESSAGE, COMMAND_COLOR, "system"))
+        self.command_arr.append(Command("", "", COMMAND_COLOR, "system"))
         self.game_state = game_state
         self.initial_text_y = 8
-        self.pointer_for_arrows = -1
+        self.command_pointer_for_arrows = 0
 
     def update(self):
         if self.write_til_not_down and self.til_not_down_cur_tick % self.til_not_down_tick == 0:
@@ -70,25 +71,50 @@ class Console:
         self.cur_command = []
         self.dash_x = self.font.size(self.get_path())[0]
         self.dash_y += self.font.size("A")[1] + TEXT_OFFSET
+        self.command_pointer_for_arrows = 0
         if self.get_text_height() > self.game_state.game_state_manager.game.WINDOW_HEIGHT:
             self.initial_text_y = -(self.get_text_height() - self.game_state.game_state_manager.game.WINDOW_HEIGHT +
                                     self.font.size("A")[1] + TEXT_OFFSET)
 
-    def create_message(self, path, message):
-        self.command_arr.append(Command(path, message, COMMAND_COLOR))
+    def execute_arrow_up(self):
+        self.cur_command = self.get_previous_message()
+
+    def execute_arrow_down(self):
+        self.cur_command = self.get_next_message()
 
     def execute_backspace(self):
         self.cur_command = self.cur_command[:-1]
         self.dash_x = self.font.size("".join(self.cur_command))[0] + self.font.size(self.get_path())[0]
 
+    def create_message(self, path, message):
+        self.command_arr.append(Command(path, message, COMMAND_COLOR, "user"))
+
     def create_error(self, error):
-        self.command_arr.append(Command("", error, ERROR_MESSAGE_COLOR))
+        self.command_arr.append(Command("", error, ERROR_MESSAGE_COLOR, "system"))
 
     def get_text_height(self):
         return len(self.command_arr) * self.font.size("A")[1] + TEXT_OFFSET * len(self.command_arr)
 
     def update_dash_position(self):
         self.dash_y = self.get_text_height()
+
+    def get_previous_message(self):
+        print(self.command_pointer_for_arrows, len(self.command_arr))
+        start = len(self.command_arr) - 1 if self.command_pointer_for_arrows == 0 else self.command_pointer_for_arrows
+        for i in range(start - 1, 0, -1):
+            if self.command_arr[i].author == "user":
+                self.command_pointer_for_arrows = i
+                return self.command_arr[i].command
+        return [""]
+
+    def get_next_message(self):
+        if self.command_pointer_for_arrows == 0:
+            return [""]
+        for i in range(self.command_pointer_for_arrows + 1, len(self.command_arr)):
+            if self.command_arr[i].author == "user":
+                self.command_pointer_for_arrows = i
+                return self.command_arr[i].command
+        return [""]
 
     def handle_input(self, event):
         if event.type == pygame.TEXTINPUT or event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
@@ -117,6 +143,10 @@ class Console:
             elif pygame.key.name(event.key) == "backspace":
                 self.til_not_down_command = "backspace"
                 self.til_not_down_cur_tick = 0
+            elif event.key == pygame.K_UP:
+                self.execute_arrow_up()
+            elif event.key == pygame.K_DOWN:
+                self.execute_arrow_down()
             self.dash_tick = 0
         elif event.type == pygame.KEYUP:
             self.write_til_not_down = False

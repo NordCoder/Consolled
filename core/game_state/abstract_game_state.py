@@ -2,8 +2,8 @@ import pygame
 
 
 class GameState:
-    def __init__(self):
-        pass
+    def __init__(self, game_state_manager):
+        self.game_state_manager = game_state_manager
 
     def update(self):
         pass

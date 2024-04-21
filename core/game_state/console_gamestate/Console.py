@@ -1,5 +1,8 @@
 import pygame
 
+from core.game_state.snake_gamestate.Snake import Snake
+from core.game_state.snake_gamestate.SnakeGameState import SnakeGameState
+
 TIL_NOT_DOWN_TICK_BIG = 25
 TIL_NOT_DOWN_TICK_SMALL = 3
 FONT_SIZE = 30
@@ -24,7 +27,7 @@ class Message:
 
 
 class Console:
-    def __init__(self, c_folder):
+    def __init__(self, c_folder, game_state):
         self.messages_arr = []
         self.cur_message = []
         self.write_til_not_down = False
@@ -40,6 +43,7 @@ class Console:
         self.messages_arr.append(Message("", "", MESSAGE_COLOR))
         self.messages_arr.append(Message("", INITIAL_MESSAGE, MESSAGE_COLOR))
         self.messages_arr.append(Message("", "", MESSAGE_COLOR))
+        self.game_state = game_state
 
     def update(self):
         if self.write_til_not_down and self.til_not_down_cur_tick % self.til_not_down_tick == 0:
@@ -70,15 +74,19 @@ class Console:
 
     def parse_command(self, string):
         tokens = string.split()
-        if tokens[0] == 'ls':
-            self.list_of_dirs_command()
-            return
-        if len(tokens) > 1:
-            if tokens[0] == 'cd':
-                self.change_directory_command(tokens[1])
+        if len(tokens) > 0:
+            if tokens[0] == 'ls':
+                self.list_of_dirs_command()
                 return
+            if len(tokens) > 1:
+                if tokens[0] == 'cd':
+                    self.change_directory_command(tokens[1])
+                    return
+                if tokens[0] == 'execute':
+                    self.execute_command(tokens[1])
+                    return
 
-        self.create_error(f"There's no command named {string }")
+        self.create_error(f"There's no command named {string}")
 
     def create_error(self, error):
         self.messages_arr.append(Message("", error, COMMAND_ERROR_COLOR))
@@ -96,6 +104,13 @@ class Console:
             list_of_dirs += heir.name
             list_of_dirs += " "
         self.messages_arr.append(Message("", list_of_dirs, MESSAGE_COLOR))
+
+    def execute_command(self, filename):
+        for heir in self.current_folder.heirs:
+            if heir.name == filename and filename == "snake.exe":
+                heir.execute(SnakeGameState(self.game_state.game_state_manager))
+                return
+        self.create_error(f"{filename} is not runnable")
 
     def update_dash_position(self):
         self.dash_y = len(self.messages_arr) * self.font.size("A")[1] + TEXT_OFFSET * len(self.messages_arr)
@@ -132,7 +147,6 @@ class Console:
         initial_y = 8
 
         for message in self.messages_arr:
-            print(message)
             text_surface = self.font.render(message.path + "".join(message.message), True, message.color)
             screen.blit(text_surface, (X_TEXT_OFFSET, initial_y))
             initial_y += self.font.size("A")[1] + TEXT_OFFSET

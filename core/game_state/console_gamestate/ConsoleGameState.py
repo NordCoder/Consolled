@@ -7,10 +7,9 @@ BACKGROUND = (8, 8, 8)
 
 
 class ConsoleGameState(GameState):
-
-    def __init__(self, c_folder):
-        super().__init__()
-        self.console = Console(c_folder)
+    def __init__(self, c_folder, game_state_manager):
+        super().__init__(game_state_manager)
+        self.console = Console(c_folder, self)
 
     def update(self):
         self.console.update()

@@ -6,7 +6,8 @@
       "admin/":
       {
         "messanger.exe": "file",
-        "hint.txt": "file"
+        "hint.txt": "file",
+        "snake.exe": "file"
       },
       "guest/":
       {

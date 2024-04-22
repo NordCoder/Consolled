@@ -66,13 +66,13 @@ class Console:
         self.update_dash_position()
 
     def execute_return(self):
-        self.create_message(self.get_path(), self.cur_command)
+        self.create_message(self.get_path(), self.cur_command, "user")
         self.command_parser.parse_command("".join(self.cur_command)).execute(self)
         self.cur_command = []
         self.dash_x = self.font.size(self.get_path())[0]
         self.dash_y += self.font.size("A")[1] + TEXT_OFFSET
         self.command_pointer_for_arrows = 0
-        if self.get_text_height() > self.game_state.game_state_manager.game.WINDOW_HEIGHT:
+        if self.get_text_height() >= self.game_state.game_state_manager.game.WINDOW_HEIGHT:
             self.initial_text_y = -(self.get_text_height() - self.game_state.game_state_manager.game.WINDOW_HEIGHT +
                                     self.font.size("A")[1] + TEXT_OFFSET)
 
@@ -86,8 +86,8 @@ class Console:
         self.cur_command = self.cur_command[:-1]
         self.dash_x = self.font.size("".join(self.cur_command))[0] + self.font.size(self.get_path())[0]
 
-    def create_message(self, path, message):
-        self.command_arr.append(Command(path, message, COMMAND_COLOR, "user"))
+    def create_message(self, path, message, author):
+        self.command_arr.append(Command(path, message, COMMAND_COLOR, author))
 
     def create_error(self, error):
         self.command_arr.append(Command("", error, ERROR_MESSAGE_COLOR, "system"))
@@ -99,7 +99,6 @@ class Console:
         self.dash_y = self.get_text_height()
 
     def get_previous_message(self):
-        print(self.command_pointer_for_arrows, len(self.command_arr))
         start = len(self.command_arr) - 1 if self.command_pointer_for_arrows == 0 else self.command_pointer_for_arrows
         for i in range(start - 1, 0, -1):
             if self.command_arr[i].author == "user":

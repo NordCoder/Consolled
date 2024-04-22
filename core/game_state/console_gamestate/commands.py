@@ -1,3 +1,4 @@
+from core.entity.file_system.Folder import Folder
 from core.game_state.snake_gamestate.SnakeGameState import SnakeGameState
 
 
@@ -10,16 +11,31 @@ class AbstractCommand:
 
 
 class ChangeDirCommand(AbstractCommand):
-    def __init__(self, dir_name):
+    def __init__(self, dir_path):
         super().__init__()
-        self.dir_name = dir_name
+        self.dir_path = dir_path
+        self.dir_arr = dir_path.split("/")
+        self.result_folder = None
 
     def execute(self, console):
-        for heir in console.current_folder.heirs:
-            if heir.name == self.dir_name:
-                console.current_folder = heir
+        self.result_folder = console.current_folder
+        for folder_name in self.dir_arr:
+            check = self.get_next(console, folder_name)
+            if check:
                 return
-        console.create_error(f"There's no folder named {self.dir_name}")
+        console.current_folder = self.result_folder
+
+    def get_next(self, console, folder_name):
+        if folder_name == "..":
+            self.result_folder = console.current_folder.parent
+            return 0
+        for heir in self.result_folder.heirs:
+            if (heir.name[:-1] == folder_name or heir.name == folder_name) and isinstance(heir, Folder):
+                self.result_folder = heir
+                return 0
+            if folder_name != "":
+                console.create_error(f"There's nothing on path {self.dir_path}")
+                return 1
 
 
 class ListCommand(AbstractCommand):
@@ -31,7 +47,7 @@ class ListCommand(AbstractCommand):
         for heir in console.current_folder.heirs:
             list_of_dirs += heir.name
             list_of_dirs += " "
-        console.create_message("", list_of_dirs)
+        console.create_message("", list_of_dirs, "system")
 
 
 class ExecuteCommand(AbstractCommand):

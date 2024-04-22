@@ -42,10 +42,11 @@ def generate_stuff():
     y = y_of_rect + rect_height
     return Block(x, y)
 
+
 tick_time = 200
 tick = 0
 
-blocks = []
+blocks = [0 for i in range(50)]
 
 capacity = 50
 pointer = 0
@@ -69,11 +70,13 @@ while True:
 
     if tick % tick_time == 0:
         tick = 0
-        blocks.insert(pointer,generate_stuff())
-
+        blocks[pointer] = generate_stuff()
+        pointer += 1
+        if pointer == capacity:
+            pointer = 0
     for block in blocks:
-        block.update_position()  # Update the position of each block
-        draw_rect(block)
+        if isinstance(block, Block):
+            block.update_position()  # Update the position of each block
+            draw_rect(block)
     tick += 1
-    pointer += 1
     pygame.display.flip()

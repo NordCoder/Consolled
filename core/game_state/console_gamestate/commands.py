@@ -1,6 +1,8 @@
 from core.entity.file_system.Folder import Folder
+from core.game_state.dyno_gamestate.DynoGameState import DynoGameState
 from core.game_state.snake_gamestate.SnakeGameState import SnakeGameState
 
+GAME_STATE_MAP = {"snake.exe": SnakeGameState, "dyno.exe": DynoGameState}
 
 class AbstractCommand:
     def __init__(self):
@@ -57,9 +59,9 @@ class ExecuteCommand(AbstractCommand):
 
     def execute(self, console):
         for heir in console.current_folder.heirs:
-            if heir.name == self.filename and self.filename == "snake.exe":
+            if heir.name == self.filename and self.filename in GAME_STATE_MAP:
                 console.write_til_not_down = False
-                heir.execute(SnakeGameState(console.game_state.game_state_manager))
+                heir.execute(GAME_STATE_MAP[self.filename](console.game_state.game_state_manager))
                 return
         console.create_error(f"{self.filename} is not runnable")
 

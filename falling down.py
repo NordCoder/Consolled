@@ -1,5 +1,5 @@
-import pygame
-import sys
+import pygame, sys
+from pygame.locals import *
 
 pygame.init()
 
@@ -9,15 +9,31 @@ SCREEN_HEIGHT = 800
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('Falling objects')
 
+background_image = pygame.image.load(r'C:\Users\mikhe\Desktop\space2.jpg')
+background_image = pygame.transform.scale(background_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
+myimage = pygame.image.load(r"C:\Users\mikhe\Desktop\ufo.png")
 # rect parameters
 x_of_rect = 0
 y_of_rect = 0
-rect_width = 100
+rect_width = 50
 rect_height = 50
 delta_x_rect = 2
 
 FALL_OBJECT_WIDTH = rect_width
 FALL_OBJECT_DELTA_Y = 1
+
+tick_time = 170
+tick = 0
+
+
+
+capacity = 50
+pointer = 0
+score = 0
+
+font = pygame.font.Font(None, 50)
+
+
 
 
 class Block:  # class Block
@@ -43,20 +59,41 @@ def generate_stuff():
     return Block(x, y)
 
 
-tick_time = 200
-tick = 0
+def check_collisions(stuff):
+    return pygame.Rect(player.x, player.y, rect_width, rect_width).colliderect(
+        pygame.Rect(stuff.x, stuff.y, rect_width, rect_width))
 
-blocks = [0 for i in range(50)]
+player = Block(460,740)
+key_right_pressed = False
+key_left_pressed = False
 
-capacity = 50
-pointer = 0
+blocks = [0 for i in range(0,50)]
 
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-    screen.fill((255, 255, 255))
+        elif event.type == KEYDOWN:
+            if event.key == K_RIGHT:
+                key_right_pressed = True
+            if event.key == K_LEFT:
+                key_left_pressed = True
+        elif event.type == KEYUP:
+            if event.key == K_RIGHT:
+                key_right_pressed = False
+            if event.key == K_LEFT:
+                key_left_pressed = False
+    if key_right_pressed == True:
+        player.x += 1
+    if key_left_pressed == True:
+        player.x -= 1
+    if player.x + rect_width >= SCREEN_WIDTH:
+        player.x = SCREEN_WIDTH - rect_width
+    if player.x <= 0:
+        player.x = 0
+    screen.blit(background_image, (0, 0))
+    pygame.draw.rect(screen,(0,255,0),(player.x,player.y,rect_width,rect_width))
     # rect movement
     if x_of_rect + rect_width >= SCREEN_WIDTH:
         delta_x_rect *= -1
@@ -66,17 +103,22 @@ while True:
     r = (x_of_rect, y_of_rect, rect_width, rect_height)
     pygame.draw.rect(screen, (0, 0, 0), r)
 
-    # block = generate_stuff()
 
     if tick % tick_time == 0:
         tick = 0
         blocks[pointer] = generate_stuff()
         pointer += 1
-        if pointer == capacity:
-            pointer = 0
+        score += 1
+    if pointer == capacity:
+        pointer = 0
     for block in blocks:
         if isinstance(block, Block):
             block.update_position()  # Update the position of each block
             draw_rect(block)
+            if check_collisions(block):
+                pygame.quit()
+                sys.exit()
+    score_text = font.render(f'Score: {score}', True, (0, 0, 0))
+    screen.blit(score_text, (10, 10))
     tick += 1
     pygame.display.flip()

@@ -97,4 +97,4 @@ class Snake:
             elif event.key == K_DOWN:
                 if self.direction != [0, -1] and not self.key_cooldown:
                     self.direction = [0, 1]
-            key_cooldown = True
+            self.key_cooldown = True

@@ -16,6 +16,7 @@
     },
     "program_files/":
     {
-    }
+    },
+      "dyno.exe": "file"
   }
 }

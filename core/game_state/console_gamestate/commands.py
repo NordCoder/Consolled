@@ -1,8 +1,9 @@
 from core.entity.file_system.Folder import Folder
-from core.game_state.dyno_gamestate.DynoGameState import DynoGameState
+from core.game_state.dyno_gamestate.DinoGameState import DynoGameState
 from core.game_state.snake_gamestate.SnakeGameState import SnakeGameState
 
 GAME_STATE_MAP = {"snake.exe": SnakeGameState, "dyno.exe": DynoGameState}
+
 
 class AbstractCommand:
     def __init__(self):
@@ -35,9 +36,9 @@ class ChangeDirCommand(AbstractCommand):
             if (heir.name[:-1] == folder_name or heir.name == folder_name) and isinstance(heir, Folder):
                 self.result_folder = heir
                 return 0
-            if folder_name != "":
-                console.create_error(f"There's nothing on path {self.dir_path}")
-                return 1
+        if folder_name != "":
+            console.create_error(f"There's nothing on path {self.dir_path}")
+            return 1
 
 
 class ListCommand(AbstractCommand):

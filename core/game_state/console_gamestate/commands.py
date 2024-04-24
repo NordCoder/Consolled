@@ -2,7 +2,7 @@ from core.entity.file_system.Folder import Folder
 from core.game_state.dyno_gamestate.DinoGameState import DynoGameState
 from core.game_state.snake_gamestate.SnakeGameState import SnakeGameState
 
-GAME_STATE_MAP = {"snake.exe": SnakeGameState, "dyno.exe": DynoGameState}
+GAME_STATE_MAP = {"snake.exe": SnakeGameState, "dino.exe": DynoGameState}
 
 
 class AbstractCommand:
